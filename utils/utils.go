@@ -15,6 +15,7 @@ import (
 type Role string
 
 const (
+	NONE  Role = ""
 	USER  Role = "user"
 	ADMIN Role = "admin"
 )
@@ -65,7 +66,7 @@ func GenerateToken(username, password string, role Role) (string, error) {
 	return tokenString, nil
 }
 
-func ValidateToken(token string) (bool, error) {
+func ValidateToken(token string) (bool, Role, error) {
 	db := database.OpenDatabase()
 
 	defer db.Close()
@@ -73,7 +74,7 @@ func ValidateToken(token string) (bool, error) {
 	stmt, err := db.Prepare("SELECT token FROM tokens WHERE token = ?")
 
 	if err != nil {
-		return false, err
+		return false, NONE, err
 	}
 
 	defer stmt.Close()
@@ -83,11 +84,11 @@ func ValidateToken(token string) (bool, error) {
 	err = stmt.QueryRow(token).Scan(&tokenString)
 
 	if err != nil {
-		return false, err
+		return false, NONE, err
 	}
 
 	if token != tokenString {
-		return false, errors.New("invalid token")
+		return false, NONE, errors.New("invalid token")
 	}
 
 	result, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
@@ -95,10 +96,13 @@ func ValidateToken(token string) (bool, error) {
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}), jwt.WithExpirationRequired())
 
 	if err != nil {
-		return false, err
+		return false, NONE, err
 	}
 
-	return result.Valid, nil
+	claims := result.Claims.(jwt.MapClaims)
+	role := Role(claims["role"].(string))
+
+	return result.Valid, role, nil
 }
 
 func InvalidateToken(token string) bool {

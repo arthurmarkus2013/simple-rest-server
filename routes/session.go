@@ -7,11 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Credentials struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
 func Login(ctx *gin.Context) {
 	var credentials Credentials
 	err := ctx.BindJSON(&credentials)

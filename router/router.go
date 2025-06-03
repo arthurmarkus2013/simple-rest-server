@@ -24,9 +24,10 @@ func Register_Routes(engine *gin.Engine) {
 	protected.Use(authMiddleware)
 
 	protected.POST("/create", routes.CreateMovie)
-	protected.GET("/read", routes.ReadMovie)
-	protected.POST("/update", routes.UpdateMovie)
-	protected.POST("/delete", routes.DeleteMovie)
+	protected.GET("/list", routes.ReadMovie)
+	protected.GET("/list/:id", routes.ReadMovie)
+	protected.POST("/update/:id", routes.UpdateMovie)
+	protected.POST("/delete/:id", routes.DeleteMovie)
 
 	engine.POST("/register", routes.Register)
 	engine.POST("/login", routes.Login)
@@ -34,11 +35,13 @@ func Register_Routes(engine *gin.Engine) {
 }
 
 func authMiddleware(ctx *gin.Context) {
-	result, err := utils.ValidateToken(ctx.GetHeader("Authorization"))
+	result, role, err := utils.ValidateToken(ctx.GetHeader("Authorization"))
 
 	if err != nil || !result {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 	}
+
+	ctx.Keys["role"] = role
 
 	ctx.Next()
 }
