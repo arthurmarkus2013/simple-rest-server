@@ -1,6 +1,8 @@
-FROM golang:1.24.3-bookworm AS build
+FROM golang:1.24.3-alpine3.22 AS build
 
 WORKDIR /app
+
+RUN apk add build-base
 
 COPY . .
 
@@ -10,7 +12,7 @@ RUN go env -w CGO_ENABLED=1
 
 RUN go build -o simple-rest-server
 
-FROM ubuntu:rolling
+FROM alpine:latest
 
 WORKDIR /app
 
