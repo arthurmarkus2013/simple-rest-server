@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"errors"
+	"log/slog"
 	"net/http"
 )
 
@@ -25,6 +26,8 @@ func ReadMovie(ctx *gin.Context) {
 		result, err := db.Query("SELECT * FROM movies")
 
 		if err != nil {
+			slog.Error("something went wrong", "error", err.Error())
+
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "something went wrong",
 			})
@@ -40,6 +43,8 @@ func ReadMovie(ctx *gin.Context) {
 		result, err := db.Prepare("SELECT * FROM movies WHERE id = ?")
 
 		if err != nil {
+			slog.Error("something went wrong", "error", err.Error())
+
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "something went wrong",
 			})

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/arthurmarkus2013/simple-rest-server/database"
@@ -22,6 +23,8 @@ func DeleteMovie(ctx *gin.Context) {
 	stmt, err := db.Prepare("DELETE FROM movies WHERE id = ?")
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -33,6 +36,8 @@ func DeleteMovie(ctx *gin.Context) {
 	result, err := stmt.Exec(ctx.Request.PathValue("id"))
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -42,6 +47,8 @@ func DeleteMovie(ctx *gin.Context) {
 	affectedRows, err := result.RowsAffected()
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -49,6 +56,8 @@ func DeleteMovie(ctx *gin.Context) {
 	}
 
 	if affectedRows != 1 {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})

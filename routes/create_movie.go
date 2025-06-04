@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/arthurmarkus2013/simple-rest-server/database"
@@ -23,6 +24,7 @@ func CreateMovie(ctx *gin.Context) {
 	err := ctx.BindJSON(&movie)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
 
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -33,6 +35,8 @@ func CreateMovie(ctx *gin.Context) {
 	stmt, err := db.Prepare("INSERT INTO movies (title, description, release_year) VALUES (?, ?, ?)")
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -44,6 +48,8 @@ func CreateMovie(ctx *gin.Context) {
 	result, err := stmt.Exec(movie.Title, movie.Description, movie.ReleaseYear)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -53,6 +59,8 @@ func CreateMovie(ctx *gin.Context) {
 	affectedRows, err := result.RowsAffected()
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -60,6 +68,8 @@ func CreateMovie(ctx *gin.Context) {
 	}
 
 	if affectedRows != 1 {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})

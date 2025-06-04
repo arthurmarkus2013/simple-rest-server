@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/arthurmarkus2013/simple-rest-server/utils"
@@ -18,9 +19,11 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateToken(credentials.Username, credentials.Password, utils.USER)
+	token, err := utils.GenerateToken(credentials.Username, credentials.Password)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})

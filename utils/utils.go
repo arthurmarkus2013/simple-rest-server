@@ -6,6 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"errors"
+	"log/slog"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -20,10 +21,12 @@ const (
 	ADMIN Role = "admin"
 )
 
-func GenerateToken(username, password string, role Role) (string, error) {
-	result, err := ValidateCredentials(username, password)
+func GenerateToken(username, password string) (string, error) {
+	result, role, err := ValidateCredentials(username, password)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return "", err
 	}
 
@@ -32,16 +35,18 @@ func GenerateToken(username, password string, role Role) (string, error) {
 	}
 
 	claims := jwt.MapClaims{
-		"username":  username,
-		"role":      role,
-		"createdAt": time.Now(),
-		"expiresAt": time.Now().Add(time.Hour),
+		"sub":   username,
+		"roles": role,
+		"iat":   time.Now(),
+		"exp":   time.Now().Add(time.Hour),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	tokenString, err := token.SignedString([]byte("secret"))
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return "", errors.New("failed to generate token")
 	}
 
@@ -52,6 +57,8 @@ func GenerateToken(username, password string, role Role) (string, error) {
 	stmt, err := db.Prepare("INSERT INTO tokens (token) VALUES (?)")
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return "", err
 	}
 
@@ -60,6 +67,8 @@ func GenerateToken(username, password string, role Role) (string, error) {
 	_, err = stmt.Exec(tokenString)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return "", err
 	}
 
@@ -74,6 +83,8 @@ func ValidateToken(token string) (bool, Role, error) {
 	stmt, err := db.Prepare("SELECT token FROM tokens WHERE token = ?")
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return false, NONE, err
 	}
 
@@ -84,6 +95,8 @@ func ValidateToken(token string) (bool, Role, error) {
 	err = stmt.QueryRow(token).Scan(&tokenString)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return false, NONE, err
 	}
 
@@ -96,11 +109,13 @@ func ValidateToken(token string) (bool, Role, error) {
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}), jwt.WithExpirationRequired())
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return false, NONE, err
 	}
 
 	claims := result.Claims.(jwt.MapClaims)
-	role := Role(claims["role"].(string))
+	role := Role(claims["roles"].(string))
 
 	return result.Valid, role, nil
 }
@@ -113,6 +128,8 @@ func InvalidateToken(token string) bool {
 	stmt, err := db.Prepare("DELETE FROM tokens WHERE token = ?")
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return false
 	}
 
@@ -121,6 +138,8 @@ func InvalidateToken(token string) bool {
 	result, err := stmt.Exec(token)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return false
 	}
 
@@ -129,34 +148,42 @@ func InvalidateToken(token string) bool {
 	return affectedRows == 1
 }
 
-func ValidateCredentials(username, password string) (bool, error) {
+func ValidateCredentials(username, password string) (bool, Role, error) {
 	db := database.OpenDatabase()
 
 	defer db.Close()
 
-	stmt, err := db.Prepare("SELECT password FROM users WHERE username = ?")
+	stmt, err := db.Prepare("SELECT password, role FROM users WHERE username = ?")
 
 	if err != nil {
-		return false, err
+		slog.Error("something went wrong", "error", err.Error())
+
+		return false, NONE, err
 	}
 
 	defer stmt.Close()
 
-	var passwordHash string
+	var passwordHash, role string
 
-	err = stmt.QueryRow(username).Scan(&passwordHash)
+	err = stmt.QueryRow(username).Scan(&passwordHash, &role)
 
 	if err != nil {
-		return false, err
+		slog.Error("something went wrong", "error", err.Error())
+
+		return false, NONE, err
 	}
 
-	return CheckPassword(password, passwordHash), nil
+	return CheckPassword(password, passwordHash), Role(role), nil
 }
 
+var salt = "j403fjJ)FJ3jf9j))!Fj9f!IR9xxss07hh"
+
 func HashPassword(password string) (string, error) {
-	hashBytes, err := bcrypt.GenerateFromPassword([]byte(password), 64)
+	hashBytes, err := bcrypt.GenerateFromPassword([]byte(salt+":"+password), bcrypt.DefaultCost)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		return "", err
 	}
 
@@ -164,7 +191,11 @@ func HashPassword(password string) (string, error) {
 }
 
 func CheckPassword(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(salt+":"+password))
+
+	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+	}
 
 	return err == nil
 }

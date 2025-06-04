@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/arthurmarkus2013/simple-rest-server/database"
@@ -22,6 +23,8 @@ func UpdateMovie(ctx *gin.Context) {
 	stmt, err := db.Prepare("UPDATE movies SET title = ?, description = ?, release_year = ? WHERE id = ?")
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -43,6 +46,8 @@ func UpdateMovie(ctx *gin.Context) {
 	result, err := stmt.Exec(movie.Title, movie.Description, movie.ReleaseYear, ctx.Request.PathValue("id"))
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -52,6 +57,8 @@ func UpdateMovie(ctx *gin.Context) {
 	affectedRows, err := result.RowsAffected()
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -59,6 +66,8 @@ func UpdateMovie(ctx *gin.Context) {
 	}
 
 	if affectedRows != 1 {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})

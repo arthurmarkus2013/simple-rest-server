@@ -1,9 +1,11 @@
 package routes
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/arthurmarkus2013/simple-rest-server/database"
+	"github.com/arthurmarkus2013/simple-rest-server/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,9 +24,11 @@ func Register(ctx *gin.Context) {
 
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO users (username, password) VALUES (?, ?)")
+	stmt, err := db.Prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
@@ -33,9 +37,21 @@ func Register(ctx *gin.Context) {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.Username, user.Password)
+	passwordHash, err := utils.HashPassword(user.Password)
 
 	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "something went wrong",
+		})
+		return
+	}
+
+	_, err = stmt.Exec(user.Username, passwordHash, user.Role)
+
+	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",
 		})
