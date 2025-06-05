@@ -11,7 +11,7 @@ import (
 )
 
 func CreateMovie(ctx *gin.Context) {
-	if ctx.Keys["role"] == utils.ADMIN {
+	if ctx.Keys["role"] != utils.ADMIN {
 		ctx.AbortWithError(http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
@@ -68,6 +68,17 @@ func CreateMovie(ctx *gin.Context) {
 	}
 
 	if affectedRows != 1 {
+		slog.Error("something went wrong", "error", affectedRows)
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "something went wrong",
+		})
+		return
+	}
+
+	movieId, err := result.LastInsertId()
+
+	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
 
 		ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -76,7 +87,10 @@ func CreateMovie(ctx *gin.Context) {
 		return
 	}
 
+	movie.ID = int(movieId)
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "movie created",
+		"movie":   movie,
 	})
 }

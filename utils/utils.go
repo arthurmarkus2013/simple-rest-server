@@ -21,6 +21,8 @@ const (
 	ADMIN Role = "admin"
 )
 
+const tokenSecret = "374gfech98h93f9cmkvbztggfh09pw374ggf"
+
 func GenerateToken(username, password string) (string, error) {
 	result, role, err := ValidateCredentials(username, password)
 
@@ -37,12 +39,12 @@ func GenerateToken(username, password string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":   username,
 		"roles": role,
-		"iat":   time.Now(),
-		"exp":   time.Now().Add(time.Hour),
+		"iat":   time.Now().Unix(),
+		"exp":   time.Now().Add(time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	tokenString, err := token.SignedString([]byte("secret"))
+	tokenString, err := token.SignedString([]byte(tokenSecret))
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
@@ -105,7 +107,7 @@ func ValidateToken(token string) (bool, Role, error) {
 	}
 
 	result, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
-		return []byte("secret"), nil
+		return []byte(tokenSecret), nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}), jwt.WithExpirationRequired())
 
 	if err != nil {
@@ -179,7 +181,7 @@ func ValidateCredentials(username, password string) (bool, Role, error) {
 var salt = "j403fjJ)FJ3jf9j))!Fj9f!IR9xxss07hh"
 
 func HashPassword(password string) (string, error) {
-	hashBytes, err := bcrypt.GenerateFromPassword([]byte(salt+":"+password), bcrypt.DefaultCost)
+	hashBytes, err := bcrypt.GenerateFromPassword([]byte(salt+password), bcrypt.DefaultCost)
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
@@ -191,7 +193,7 @@ func HashPassword(password string) (string, error) {
 }
 
 func CheckPassword(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(salt+":"+password))
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(salt+password))
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())

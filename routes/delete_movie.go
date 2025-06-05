@@ -11,8 +11,17 @@ import (
 )
 
 func DeleteMovie(ctx *gin.Context) {
-	if ctx.Keys["role"] == utils.ADMIN {
+	if ctx.Keys["role"] != utils.ADMIN {
 		ctx.AbortWithError(http.StatusUnauthorized, errors.New("unauthorized"))
+		return
+	}
+
+	id := ctx.Param("id")
+
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "id is required",
+		})
 		return
 	}
 
@@ -33,7 +42,7 @@ func DeleteMovie(ctx *gin.Context) {
 
 	defer stmt.Close()
 
-	result, err := stmt.Exec(ctx.Request.PathValue("id"))
+	result, err := stmt.Exec(id)
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
@@ -56,7 +65,7 @@ func DeleteMovie(ctx *gin.Context) {
 	}
 
 	if affectedRows != 1 {
-		slog.Error("something went wrong", "error", err.Error())
+		slog.Error("something went wrong", "error", affectedRows)
 
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",

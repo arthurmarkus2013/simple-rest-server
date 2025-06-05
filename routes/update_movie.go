@@ -11,8 +11,17 @@ import (
 )
 
 func UpdateMovie(ctx *gin.Context) {
-	if ctx.Keys["role"] == utils.ADMIN {
+	if ctx.Keys["role"] != utils.ADMIN {
 		ctx.AbortWithError(http.StatusUnauthorized, errors.New("unauthorized"))
+		return
+	}
+
+	id := ctx.Param("id")
+
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "id is required",
+		})
 		return
 	}
 
@@ -43,7 +52,7 @@ func UpdateMovie(ctx *gin.Context) {
 		return
 	}
 
-	result, err := stmt.Exec(movie.Title, movie.Description, movie.ReleaseYear, ctx.Request.PathValue("id"))
+	result, err := stmt.Exec(movie.Title, movie.Description, movie.ReleaseYear, id)
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
@@ -66,7 +75,7 @@ func UpdateMovie(ctx *gin.Context) {
 	}
 
 	if affectedRows != 1 {
-		slog.Error("something went wrong", "error", err.Error())
+		slog.Error("something went wrong", "error", affectedRows)
 
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "something went wrong",

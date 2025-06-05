@@ -27,7 +27,7 @@ func Register_Routes(engine *gin.Engine) {
 	protected.GET("/list", routes.ReadMovie)
 	protected.GET("/list/:id", routes.ReadMovie)
 	protected.POST("/update/:id", routes.UpdateMovie)
-	protected.POST("/delete/:id", routes.DeleteMovie)
+	protected.GET("/delete/:id", routes.DeleteMovie)
 
 	engine.POST("/register", routes.Register)
 	engine.POST("/login", routes.Login)
@@ -39,6 +39,10 @@ func authMiddleware(ctx *gin.Context) {
 
 	if err != nil || !result {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
+	}
+
+	if ctx.Keys == nil {
+		ctx.Keys = make(map[string]any)
 	}
 
 	ctx.Keys["role"] = role
