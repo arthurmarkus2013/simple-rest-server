@@ -26,7 +26,8 @@ func InitializeDatabase() {
 		);
 		CREATE TABLE IF NOT EXISTS tokens (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			token TEXT NOT NULL
+			token TEXT NOT NULL,
+			ttl INTEGER NOT NULL
 		);
 	`)
 

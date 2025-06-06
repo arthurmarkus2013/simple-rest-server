@@ -56,7 +56,7 @@ func GenerateToken(username, password string) (string, error) {
 
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO tokens (token) VALUES (?)")
+	stmt, err := db.Prepare("INSERT INTO tokens (token, ttl) VALUES (?, ?)")
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
@@ -66,7 +66,7 @@ func GenerateToken(username, password string) (string, error) {
 
 	defer stmt.Close()
 
-	_, err = stmt.Exec(tokenString)
+	_, err = stmt.Exec(tokenString, claims["exp"])
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
@@ -200,4 +200,42 @@ func CheckPassword(password, hash string) bool {
 	}
 
 	return err == nil
+}
+
+func PurgeExpiredTokens(interval time.Duration) {
+	timer := time.NewTicker(interval)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-timer.C:
+			go func() {
+				db := database.OpenDatabase()
+
+				defer db.Close()
+
+				stmt, err := db.Prepare("DELETE FROM tokens WHERE ttl > ?")
+
+				if err != nil {
+					slog.Error("something went wrong", "error", err.Error())
+
+					return
+				}
+
+				defer stmt.Close()
+
+				result, err := stmt.Exec(time.Now().Unix())
+
+				if err != nil {
+					slog.Error("something went wrong", "error", err.Error())
+
+					return
+				}
+
+				affectedRows, _ := result.RowsAffected()
+
+				slog.Info("purged expired tokens", "count", affectedRows)
+			}()
+		}
+	}
 }

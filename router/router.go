@@ -27,7 +27,7 @@ func Register_Routes(engine *gin.Engine) {
 	protected.GET("/list", routes.ReadMovie)
 	protected.GET("/list/:id", routes.ReadMovie)
 	protected.POST("/update/:id", routes.UpdateMovie)
-	protected.GET("/delete/:id", routes.DeleteMovie)
+	protected.DELETE("/delete/:id", routes.DeleteMovie)
 
 	engine.POST("/register", routes.Register)
 	engine.POST("/login", routes.Login)
