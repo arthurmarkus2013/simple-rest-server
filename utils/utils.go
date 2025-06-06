@@ -214,7 +214,7 @@ func PurgeExpiredTokens(interval time.Duration) {
 
 				defer db.Close()
 
-				stmt, err := db.Prepare("DELETE FROM tokens WHERE ttl > ?")
+				stmt, err := db.Prepare("DELETE FROM tokens WHERE ttl < ?")
 
 				if err != nil {
 					slog.Error("something went wrong", "error", err.Error())
