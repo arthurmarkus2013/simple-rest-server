@@ -36,7 +36,16 @@ func Login(ctx *gin.Context) {
 }
 
 func Logout(ctx *gin.Context) {
-	result := utils.InvalidateToken(ctx.GetHeader("Authorization"))
+	token := ctx.GetHeader("Authorization")
+
+	if token == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "token is required",
+		})
+		return
+	}
+
+	result := utils.InvalidateToken(token)
 
 	if !result {
 

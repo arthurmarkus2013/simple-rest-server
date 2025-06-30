@@ -24,7 +24,40 @@ func Register(ctx *gin.Context) {
 
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
+	stmt, err := db.Prepare("SELECT * FROM users WHERE username = ?")
+
+	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "something went wrong",
+		})
+		return
+	}
+
+	defer stmt.Close()
+
+	result, err := stmt.Query(user.Username)
+
+	if err != nil {
+		slog.Error("something went wrong", "error", err.Error())
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "something went wrong",
+		})
+		return
+	}
+
+	defer result.Close()
+
+	if result.Next() {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "user already exists",
+		})
+		return
+	}
+
+	stmt, err = db.Prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)")
 
 	if err != nil {
 		slog.Error("something went wrong", "error", err.Error())
